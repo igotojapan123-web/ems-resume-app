@@ -98,15 +98,56 @@ def get_ai_response_with_history(system_prompt, messages, api_key):
 def create_system_prompt(employer, selected_items, item_contents):
     """시스템 프롬프트 생성"""
     return f"""당신은 응급구조사 자기소개서 작성을 돕는 전문 컨설턴트입니다.
+10년 이상의 응급의료 분야 채용 경험과 심리학/행동경제학 전문 지식을 보유하고 있습니다.
 
 지원처: {employer}
 
-작성 원칙:
+## 핵심 작성 원칙
 1. 사용자가 입력한 사실만 사용 (창작·과장 절대 금지)
 2. STAR 기법 적용 (Situation, Task, Action, Result)
 3. 지원처 맞춤 역량 연결
 4. 항목당 400~600자 (사용자가 글자수 지정 시 해당 글자수 준수)
 5. 응급구조사 직무 특성 반영 (신속한 판단력, 체력, 팀워크, 스트레스 관리 등)
+
+## 심리학/행동경제학 기반 설득 전략 (반드시 적용)
+
+### 1. 프라이밍 효과 (Priming Effect)
+- 첫 문장에서 강렬한 인상을 심어 면접관의 인식 프레임 설정
+- 응급 상황 대응, 생명 구조 등 임팩트 있는 키워드로 시작
+- 예: "심정지 환자의 4분, 그 골든타임이 제 직업관을 바꿨습니다"
+
+### 2. 손실 회피 (Loss Aversion)
+- "이 지원자를 채용하지 않으면 놓치게 될 것"을 암시
+- 희소한 경험, 독특한 역량 강조
+- 예: "현장 실습 300시간 중 직접 CPR을 수행한 3건의 경험"
+
+### 3. 사회적 증거 (Social Proof)
+- 타인의 인정, 수상, 팀원 평가 등 제3자 검증 활용
+- 예: "실습 지도교수님이 '침착함이 인상적'이라고 평가해주셨습니다"
+
+### 4. 구체성 효과 (Specificity Effect)
+- 추상적 표현 → 구체적 숫자, 날짜, 장소로 변환
+- "열심히" → "주 5회, 하루 2시간씩 3개월간"
+- "다양한 경험" → "외상센터 100시간, 구급차 동승 50시간"
+
+### 5. 피크-엔드 법칙 (Peak-End Rule)
+- 가장 인상적인 순간(피크)과 마무리(엔드)를 강렬하게
+- 자소서 마무리에 각오/다짐이 아닌 구체적 비전 제시
+
+### 6. 넛지 (Nudge) 기법
+- 면접관이 "이 사람을 더 알고 싶다"는 방향으로 유도
+- 호기심을 자극하는 열린 결말, 후속 질문을 유발하는 장치
+
+### 7. 스토리텔링 구조 (Hero's Journey)
+- 평범한 일상 → 도전/위기 → 성장/깨달음 → 새로운 나
+- 감정선을 따라가며 몰입감 극대화
+
+## 응급구조사 핵심 역량 키워드
+- 신속한 상황 판단력, 골든타임 인식
+- 체력과 정신력, 스트레스 내성
+- 팀워크와 명확한 커뮤니케이션
+- 생명 존중, 윤리의식
+- 지속적 학습 의지 (프로토콜 업데이트 등)
 
 선택된 항목: {', '.join(selected_items)}
 
@@ -329,6 +370,10 @@ if st.session_state.step == 1:
 elif st.session_state.step == 2:
     st.header("🤖 STEP 2: AI 분석 & 초안 생성")
 
+    # 입력칸 초기화용 카운터 (전송 후 새 key 생성)
+    if 'input_key_counter' not in st.session_state:
+        st.session_state.input_key_counter = 0
+
     # 초기 분석 수행
     if not st.session_state.chat_history:
         with st.spinner("입력하신 내용을 분석 중입니다..."):
@@ -349,10 +394,14 @@ elif st.session_state.step == 2:
             st.markdown(f"**👤 나:**\n{msg['content']}")
         st.markdown("---")
 
-    # 사용자 입력
+    # 사용자 입력 (동적 key로 초기화 구현)
     col1, col2 = st.columns([4, 1])
     with col1:
-        user_input = st.text_area("답변 또는 추가 정보 입력", height=100, key="user_input")
+        user_input = st.text_area(
+            "답변 또는 추가 정보 입력",
+            height=100,
+            key=f"user_input_{st.session_state.input_key_counter}"
+        )
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
         send_btn = st.button("📤 전송", use_container_width=True)
@@ -370,6 +419,8 @@ elif st.session_state.step == 2:
                 api_key
             )
             st.session_state.chat_history.append({"role": "assistant", "content": response})
+        # 입력칸 초기화 (key 변경)
+        st.session_state.input_key_counter += 1
         st.rerun()
 
     if generate_btn:
